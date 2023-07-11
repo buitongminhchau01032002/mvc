@@ -1,0 +1,81 @@
+﻿@using Microsoft.AspNetCore.Mvc.Localization;
+@using Microsoft.Extensions.Localization;
+@model User
+@inject IViewLocalizer Localizer
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+@{
+    ViewData["Title"] = "Register";
+}
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<h1>@Localizer["heading.register"]</h1>
+
+
+<form asp-action="Register" class="mt-5 mb-5">
+    <div class="text-danger">
+        @Html.ValidationSummary(false)
+    </div>
+    <div class="mt-3">
+        <label asp-for="Username" class="control-label"></label>
+        <input asp-for="Username" class="form-control" />
+        <span asp-validation-for="Username" class="text-danger"></span>
+    </div>
+
+    <div class="mt-3">
+        <label asp-for="Password" class="control-label"></label>
+        <input asp-for="Password" type="password" class="form-control" />
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
+
+    <div class="mt-3">
+        <label asp-for="DisplayName" class="control-label"></label>
+        <input asp-for="DisplayName" class="form-control" />
+        <span asp-validation-for="DisplayName" class="text-danger"></span>
+    </div>
+
+    <div class="mt-3">
+        <label asp-for="Avatar" class="control-label"></label>
+        <input asp-for="Avatar" class="form-control" />
+        <span asp-validation-for="Avatar" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">@SharedLocalizer["btn.register"]</button>
+    <a asp-action="Login" class="btn btn-link mt-3">@SharedLocalizer["btn.login"]</a>
+
+</form>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        // Custom validate
+        $.validator.addMethod('notpartof', function (value, element, params) {
+            var password = value;
+            var username = $('#' + params.compareElemId).val();
+            console.log(username, password)
+            if (username.includes(password)) {
+                return false;
+            }
+            return true;
+        });
+
+        $.validator.unobtrusive.adapters.add('notpartof', ["comparefield"], function (options) {
+            options.rules["notpartof"] = { compareElemId: options.params.comparefield };
+            options.messages["notpartof"] = options.message;
+        });
+
+        $("form input[data-val-remote]").on({
+            focus: function () {
+                $(this).closest('form').validate().settings.onkeyup = false;
+            },
+            blur: function () {
+                $(this).closest('form').validate().settings.onkeyup = $.validator.defaults.onkeyup;
+            }
+        });
+    });
+    
+</script>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

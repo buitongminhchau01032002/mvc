@@ -1,0 +1,23 @@
+﻿@using Microsoft.AspNetCore.Localization
+@using Microsoft.Extensions.Localization;
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer Localizer
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+
+@{
+    ViewData["Title"] = @SharedLocalizer["nav.home"];
+}
+
+
+@{
+    var requestCulture = Context.Features.Get<IRequestCultureFeature>();
+    var cultureList = ViewData["Cultures"] as List<SelectListItem>;
+}
+
+
+<div class="text-center">
+    <h1 class="display-4">@Localizer["label.welcome"]</h1>
+    <div class="py-5">
+        <a asp-action="Index" asp-controller="Photo" class="btn btn-primary">@Localizer["btn.explore"]</a>
+    </div>
+</div>

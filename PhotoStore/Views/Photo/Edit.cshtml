@@ -1,0 +1,214 @@
+﻿@using Microsoft.AspNetCore.Mvc.Localization;
+@using Microsoft.Extensions.Localization;
+@model Photo
+@inject IViewLocalizer Localizer
+@inject IStringLocalizer<SharedResource> SharedLocalizer
+
+@{
+    ViewData["Title"] = @Localizer["heading.editPhoto"];
+}
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<style>
+    .photo-picker-card:hover {
+        cursor: pointer;
+        box-shadow: 0px 0px 0px 4px #0d6efd;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center">
+    <h1>@Localizer["heading.editPhoto"]</h1>
+    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#comfirmDeleteModal">
+        <i class="bi bi-trash"></i> &nbsp;@Localizer["btn.deletePhoto"]
+    </button>
+</div>
+
+
+<form asp-action="Edit" class="mt-5 mb-5">
+    <input hidden asp-for="UserId" value="@Model.UserId"/>
+
+    <div class="d-flex mt-3">
+        <div style="margin-right: 32px; border-radius: 8px; overflow: hidden;">
+            <img src="@Model.ImageUrl" id="photo-preview" style="background: gray; width: 250px; height: 300px; object-fit: cover;" />
+        </div>
+        <div class="flex-grow-1">
+            <div>
+                <label asp-for="Title" class="control-label"></label>
+                <input asp-for="Title" class="form-control" />
+                <span asp-validation-for="Title" class="text-danger"></span>
+            </div>
+
+            <div class="mt-3">
+                <label asp-for="ImageUrl" class="control-label"></label>
+                <div class="d-flex">
+                    <input id="photo-input" asp-for="ImageUrl" class="form-control" />
+                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#pickPhotoModal">@SharedLocalizer["btn.photoPicker"]</button>
+                </div>
+                <span asp-validation-for="ImageUrl" class="text-danger"></span>
+            </div>
+
+            <div class="mt-3">
+                <label asp-for="CreatedAt" class="control-label"></label>
+                <input asp-for="CreatedAt" type="date" class="form-control" />
+                <span asp-validation-for="CreatedAt" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary mt-3">@Localizer["btn.updatePhoto"]</button>
+            <a asp-action="Index" class="btn btn-secondary mt-3">@SharedLocalizer["btn.backToList"]</a>
+        </div>
+    </div>
+
+    
+
+</form>
+
+<!-- Confirm Delete Modal -->
+<div class="modal fade" id="comfirmDeleteModal" tabindex="-1" role="dialog" aria-labelledby="comfirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">@Localizer["deleteModal.heading"]</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @Localizer["deleteModal.description"]
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@SharedLocalizer["btn.close"]</button>
+                <form asp-action="Delete" method="post">
+                    <input asp-for="Id" hidden />
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> &nbsp;@Localizer["btn.deletePhoto"]
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Photo from API picker -->
+<div class="modal fade" id="pickPhotoModal" tabindex="-1" role="dialog" aria-labelledby="pickPhotoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pickPhotoModalLabel">@SharedLocalizer["photoPicker.heading"]</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="photo-picker-search-form" class="py-2 px-3 d-flex">
+                <input id="photo-picker-search-input" class="form-control flex-grow-1" type="text" name="search" placeholder="@SharedLocalizer["label.searchPhoto"]" />
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i></button>
+            </form>
+            <div class="modal-body">
+                <div id="photo-picker-list" class="row gy-3 gx-3">
+                    <!-- AJAX insert content here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@SharedLocalizer["btn.close"]</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#photo-input').on('input', function () {
+            $('#photo-preview').attr('src', this.val());
+        });
+
+        function getAllPhoto() {
+            $.ajax({
+                url: 'https://api.unsplash.com/photos?per_page=30',
+                dataType: 'json',
+                beforeSend: function (request) {
+                    request.setRequestHeader("Accept-Version", 'v1');
+                    request.setRequestHeader("Authorization", 'Client-ID BmNrQ17IZWPJV3MvCx4iCAfDl4wZlPpETYU3BP1JoWw');
+                },
+                success: function (data) {
+                    var htmlString = data.map(function (photo) {
+                        return (
+                            `<div class="col-4">
+                                        <img src="${photo.urls.regular}" class="rounded-3 photo-picker-card" style="width: 100%; height: 300px; object-fit: cover">
+                                </div>`
+                        )
+                    }).join('');
+                    $('#photo-picker-list').html(htmlString);
+
+                    $('.photo-picker-card').click(function () {
+                        $('#photo-input').val(this.src).blur();
+                        $('#photo-preview').attr('src', this.src);
+                        $(function () {
+                            $('#pickPhotoModal').modal('toggle');
+                        })
+                    })
+                }
+            });
+        };
+        function searchPhoto(query) {
+            $.ajax({
+                url: `https://api.unsplash.com/search/photos?query=${query}&per_page=30`,
+                dataType: 'json',
+                beforeSend: function (request) {
+                    request.setRequestHeader("Accept-Version", 'v1');
+                    request.setRequestHeader("Authorization", 'Client-ID BmNrQ17IZWPJV3MvCx4iCAfDl4wZlPpETYU3BP1JoWw');
+                },
+                success: function (data) {
+                    var htmlString = data.results.map(function (photo) {
+                        return (
+                            `<div class="col-4">
+                                        <img src="${photo.urls.regular}" class="rounded-3 photo-picker-card" style="width: 100%; height: 300px; object-fit: cover">
+                                </div>`
+                        )
+                    }).join('');
+                    $('#photo-picker-list').html(htmlString);
+
+                    $('.photo-picker-card').click(function () {
+                        $('#photo-input').val(this.src).blur();
+                        $('#photo-preview').attr('src', this.src);
+                        $(function () {
+                            $('#pickPhotoModal').modal('toggle');
+                        })
+                    })
+                }
+            });
+        };
+
+        getAllPhoto();
+
+
+        $('#photo-picker-search-form').submit(function (e) {
+            e.preventDefault();
+            var searchValue = $('#photo-picker-search-input').val();
+            if (searchValue == '') {
+                getAllPhoto();
+            } else {
+                searchPhoto(searchValue);
+            }
+        })
+
+
+        // Custom validate
+        $.validator.addMethod('ignorebadword', function (value, element, params) {
+            var badWords = ["ahole", "anus", "ash0le", "ash0les", "asholes", "ass", "Ass Monkey", "Assface", "assh0le", "assh0lez", "asshole", "assholes", "assholz", "asswipe", "azzhole", "bassterds", "bastard", "bastards", "bastardz", "basterds", "basterdz", "Biatch", "bitch", "bitches", "Blow Job", "boffing", "butthole", "buttwipe", "c0ck", "c0cks", "c0k", "Carpet Muncher", "cawk", "cawks", "Clit", "cnts", "cntz", "cock", "cockhead", "cock-head", "cocks", "CockSucker", "cock-sucker", "crap", "cum", "cunt", "cunts", "cuntz", "dick", "dild0", "dild0s", "dildo", "dildos", "dilld0", "dilld0s", "dominatricks", "dominatrics", "dominatrix", "dyke", "enema", "f u c k", "f u c k e r", "fag", "fag1t", "faget", "fagg1t", "faggit", "faggot", "fagg0t", "fagit", "fags", "fagz", "faig", "faigs", "fart", "flipping the bird", "fuck", "fucker", "fuckin", "fucking", "fucks", "Fudge Packer", "fuk", "Fukah", "Fuken", "fuker", "Fukin", "Fukk", "Fukkah", "Fukken", "Fukker", "Fukkin", "g00k", "God-damned", "h00r", "h0ar", "h0re", "hells", "hoar", "hoor", "hoore", "jackoff", "jap", "japs", "jerk-off", "jisim", "jiss", "jizm", "jizz", "knob", "knobs", "knobz", "kunt", "kunts", "kuntz", "Lezzian", "Lipshits", "Lipshitz", "masochist", "masokist", "massterbait", "masstrbait", "masstrbate", "masterbaiter", "masterbate", "masterbates", "Motha Fucker", "Motha Fuker", "Motha Fukkah", "Motha Fukker", "Mother Fucker", "Mother Fukah", "Mother Fuker", "Mother Fukkah", "Mother Fukker", "mother-fucker", "Mutha Fucker", "Mutha Fukah", "Mutha Fuker", "Mutha Fukkah", "Mutha Fukker", "n1gr", "nastt", "nigger;", "nigur;", "niiger;", "niigr;", "orafis", "orgasim;", "orgasm", "orgasum", "oriface", "orifice", "orifiss", "packi", "packie", "packy", "paki", "pakie", "paky", "pecker", "peeenus", "peeenusss", "peenus", "peinus", "pen1s", "penas", "penis", "penis-breath", "penus", "penuus", "Phuc", "Phuck", "Phuk", "Phuker", "Phukker", "polac", "polack", "polak", "Poonani", "pr1c", "pr1ck", "pr1k", "pusse", "pussee", "pussy", "puuke", "puuker", "qweir", "recktum", "rectum", "retard", "sadist", "scank", "schlong", "screwing", "semen", "sex", "sexy", "Sh!t", "sh1t", "sh1ter", "sh1ts", "sh1tter", "sh1tz", "shit", "shits", "shitter", "Shitty", "Shity", "shitz", "Shyt", "Shyte", "Shytty", "Shyty", "skanck", "skank", "skankee", "skankey", "skanks", "Skanky", "slag", "slut", "sluts", "Slutty", "slutz", "son-of-a-bitch", "tit", "turd", "va1jina", "vag1na", "vagiina", "vagina", "vaj1na", "vajina", "vullva", "vulva", "w0p", "wh00r", "wh0re", "whore", "xrated", "xxx", "b!+ch", "bitch", "blowjob", "clit", "arschloch", "fuck", "shit", "ass", "asshole", "b!tch", "b17ch", "b1tch", "bastard", "bi+ch", "boiolas", "buceta", "c0ck", "cawk", "chink", "cipa", "clits", "cock", "cum", "cunt", "dildo", "dirsa", "ejakulate", "fatass", "fcuk", "fuk", "fux0r", "hoer", "hore", "jism", "kawk", "l3itch", "l3i+ch", "masturbate", "masterbat*", "masterbat3", "motherfucker", "s.o.b.", "mofo", "nazi", "nigga", "nigger", "nutsack", "phuck", "pimpis", "pusse", "pussy", "scrotum", "sh!t", "shemale", "shi+", "sh!+", "slut", "smut", "teets", "tits", "boobs", "b00bs", "teez", "testical", "testicle", "titt", "w00se", "jackoff", "wank", "whoar", "whore", "*damn", "*dyke", "*fuck*", "*shit*", "amcik", "andskota", "arse*", "assrammer", "ayir", "bi7ch", "bitch*", "bollock*", "breasts", "butt-pirate", "cabron", "cazzo", "chraa", "chuj", "Cock*", "cunt*", "d4mn", "daygo", "dego", "dick*", "dike*", "dupa", "dziwka", "ejackulate", "Ekrem*", "Ekto", "enculer", "faen", "fag*", "fanculo", "fanny", "feces", "feg", "Felcher", "ficken", "fitt*", "Flikker", "foreskin", "Fotze", "Fu(*", "fuk*", "futkretzn", "gook", "guiena", "h0r", "h4x0r", "hell", "helvete", "hoer*", "honkey", "Huevon", "hui", "injun", "jizz", "kanker*", "kike", "klootzak", "kraut", "knulle", "kuk", "kuksuger", "Kurac", "kurwa", "kusi*", "kyrpa*", "lesbo", "mamhoon", "masturbat*", "merd*", "mibun", "monkleigh", "mouliewop", "muie", "mulkku", "muschi", "nazis", "nepesaurio", "nigger*", "orospu", "paska*", "perse", "picka", "pierdol*", "pillu*", "pimmel", "piss*", "pizda", "poontsee", "poop", "porn", "p0rn", "pr0n", "preteen", "pula", "pule", "puta", "puto", "qahbeh", "queef*", "rautenberg", "schaffer", "scheiss*", "schlampe", "schmuck", "screw", "sh!t*", "sharmuta", "sharmute", "shipal", "shiz", "skribz", "skurwysyn", "sphencter", "spic", "spierdalaj", "splooge", "suka", "b00b*", "testicle*", "titt*", "twat", "vittu", "wank*", "wetback*", "wichser", "wop*", "yed", "zabourah"];
+            var stringValue = value;
+            var words = stringValue.split(' ');
+            var isContainBadWord = badWords.some(function (x) {
+                return words.includes(x);
+            });
+            if (isContainBadWord) {
+                return false;
+            }
+            return true;
+        });
+
+        $.validator.unobtrusive.adapters.add('ignorebadword', function (options) {
+            options.rules["ignorebadword"] = "#" + options.element.name.replace('.', '_');
+            options.messages["ignorebadword"] = options.message;
+        });
+    });
+</script>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
